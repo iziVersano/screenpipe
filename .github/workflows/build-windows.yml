@@ -21,8 +21,10 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install WiX Toolset v3
-        run: choco install wixtoolset --version=3.14.0 -y
+      # Fix: don't pin WiX; ensure or upgrade if preinstalled
+      - name: Ensure WiX Toolset v3
+        shell: pwsh
+        run: choco install wixtoolset -y || choco upgrade wixtoolset -y
 
       - name: Build CLI
         run: |
