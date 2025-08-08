@@ -33,7 +33,10 @@ jobs:
 
       - name: Install frontend deps
         working-directory: screenpipe-app-tauri
-        run: npm ci
+        run: |
+          npm config set legacy-peer-deps true
+          npm install
+
 
       - name: Build Tauri (Windows)
         working-directory: screenpipe-app-tauri
