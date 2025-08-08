@@ -1,0 +1,46 @@
+name: Build Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install WiX Toolset v3
+        run: choco install wixtoolset --version=3.14.0 -y
+
+      - name: Build CLI
+        run: |
+          cargo build --release
+          ./target/release/screenpipe.exe --help
+
+      - name: Install frontend deps
+        working-directory: screenpipe-app-tauri
+        run: npm ci
+
+      - name: Build Tauri (Windows)
+        working-directory: screenpipe-app-tauri
+        run: npm run tauri build
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenpipe-windows-bundle
+          path: |
+            screenpipe-app-tauri/src-tauri/target/release/bundle/msi/*.msi
+            screenpipe-app-tauri/src-tauri/target/release/bundle/exe/*.exe
