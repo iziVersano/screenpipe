@@ -13,35 +13,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node (LTS)
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
 
-      - name: Setup Rust
+      - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      # Fix: don't pin WiX; ensure or upgrade if preinstalled
+      # WiX is needed for Tauri MSI bundle; don't pin a version
       - name: Ensure WiX Toolset v3
         shell: pwsh
         run: choco install wixtoolset -y || choco upgrade wixtoolset -y
 
+      # Build CLI first (optional sanity check)
       - name: Build CLI
         run: |
           cargo build --release
           ./target/release/screenpipe.exe --help
 
-      - name: Install frontend deps
+      # Install frontend deps; tolerate peer-deps conflicts
+      - name: Install frontend deps (npm, legacy peer deps)
         working-directory: screenpipe-app-tauri
         run: |
           npm config set legacy-peer-deps true
           npm install
 
+      # Bun is required by beforeBuildCommand: "bun run build"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
 
+      # Build Tauri desktop app (msi + portable exe)
       - name: Build Tauri (Windows)
         working-directory: screenpipe-app-tauri
         run: npm run tauri build
 
+      # Publish artifacts
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
         with:
